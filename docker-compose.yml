@@ -1,0 +1,51 @@
+services:
+  fr-online-db:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_DB: fr_online
+      POSTGRES_USER: fr_user
+      POSTGRES_PASSWORD: fr_password
+    volumes:
+      - fr-online-data:/var/lib/postgresql/data
+    networks:
+      - fr-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fr_user -d fr_online"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  fr-offline-db:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_DB: fr_offline
+      POSTGRES_USER: fr_user
+      POSTGRES_PASSWORD: fr_password
+    volumes:
+      - fr-offline-data:/var/lib/postgresql/data
+    networks:
+      - fr-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fr_user -d fr_offline"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  fr-sync-simulation:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      fr-online-db:
+        condition: service_healthy
+      fr-offline-db:
+        condition: service_healthy
+    networks:
+      - fr-network
+
+networks:
+  fr-network:
+
+volumes:
+  fr-online-data:
+  fr-offline-data:
